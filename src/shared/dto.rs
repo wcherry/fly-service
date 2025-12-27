@@ -10,6 +10,7 @@ pub struct UserDto {
     pub id: Option<i32>,
     pub username: String,
     pub email_address: String,
+    pub folder_id: String,
     // Has the user activated their account via email confirmation?
     pub active: bool,   
 }
@@ -23,8 +24,24 @@ pub struct CreateUser {
     pub username: String,
     pub password: String,
     pub email_address: String,
+    pub folder_id: String,
     pub active: bool,
 }
+
+#[derive(Debug, Clone)]
+#[derive(Selectable, Queryable, Insertable, ToSchema)]
+#[diesel(table_name = users)]
+// #[serde(rename_all = "camelCase")]
+pub struct User {
+    pub id: Option<i32>,
+    pub username: String,
+    pub password: String,
+    pub email_address: String,
+    pub folder_id: String,
+    pub active: bool,
+}
+
+
 
 #[derive(Debug, Clone, Deserialize, ToSchema)]
 #[serde(rename_all = "camelCase")]
@@ -79,23 +96,35 @@ pub struct UserProfileDto {
 
 #[derive(Debug, Clone, Serialize, ToSchema)]
 #[serde(rename_all = "camelCase")]
-pub struct CreateResponse {
+pub struct CreateResponseDto {
     pub success: bool,
     pub message: Option<String>,
+    pub id: Option<String>,
 }
 
 #[allow(dead_code)]
-impl CreateResponse {
+impl CreateResponseDto {
     pub fn ok_msg(message: String) -> Self {
-        CreateResponse { success: true, message: Some(message) }
+        CreateResponseDto { success: true, message: Some(message), id: None }
     }
 
     pub fn ok() -> Self {
-        CreateResponse { success: true, message: None }
+        CreateResponseDto { success: true, message: None, id: None }
     }
 
     pub fn err(message: String) -> Self {
-        CreateResponse { success: false, message: Some(message) }
+        CreateResponseDto { success: false, message: Some(message), id: None }
+    }
+
+    pub fn ok_with_id(id: String) -> Self {
+        CreateResponseDto { success: true, message: None, id: Some(id) }
     }
 
 }
+
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct QueryParams {
+    pub folder_id: Option<String>,
+}
+

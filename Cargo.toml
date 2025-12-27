@@ -1,10 +1,11 @@
 [package]
-name = "task_now_service"
+name = "fly-service"
 version = "0.1.0"
 edition = "2024"
 
 [dependencies]
 actix-web = "4.11"
+actix-multipart = "0.6"
 # actix-files = "0.6.8"
 actix-rt = "2.11.0"
 actix-cors = "0.7.1"
@@ -13,7 +14,8 @@ actix = "0.13.5"
 # actix-broker = "0.4"
 # actix-web-actors = "4.3"
 
-# futures-util = { version="0.3.31", features = ["sink"] }
+futures-util = { version="0.3.31", features = ["sink"] }
+async-trait = "0.1.89"
 diesel = { version = "2.3.3", features = ["sqlite", "r2d2", "chrono", "uuid"] }
 diesel_migrations = "2.3.0"
 dotenv = "0.15"
@@ -29,4 +31,4 @@ uuid = { version = "1", features = ["v4", "serde"] }
 chrono = { version = "0.4.26", features = ["serde"] }
 utoipa = {version = "5.4.0", features = ["actix_extras", "chrono", "uuid"] }
 utoipa-actix-web = "0.1.2"
-utoipa-swagger-ui = { version = "9", features = ["actix-web"] }
+utoipa-swagger-ui = { version = "7.1.1-rc.0", features = ["actix-web"] }

@@ -89,12 +89,19 @@ async fn login_user_handler(
     web::Json(body): web::Json<LoginRequestDto>,
 ) -> Result<HttpResponse, Error> {
     let secret = app.get_config().jwt_secret.clone();
-    let user = web::block(move || {
-        let mut conn = app.get_connection()?;
-        find_user_by_username_and_password(&mut conn, body.username, body.password)
-    })
-    .await?
-    .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
+    // let user = web::block(move || {
+    //     let mut conn = app.get_connection()?;
+    //     find_user_by_username_and_password(&mut conn, body.username, body.password)
+    // })
+    // .await?
+    // .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
+
+    info!("Attempting to login user: {}/{}", body.username, body.password);
+
+    
+    let mut conn = app.get_connection().map_err(|err| ServiceError::InternalServerError(err.to_string()))?;
+    let user = find_user_by_username_and_password(&mut conn, body.username, body.password).map_err(|err| ServiceError::NotFound(err.to_string()))?;
+
 
     // let parsed_hash = PasswordHash::new(&user.password).unwrap();
     // let is_valid = Argon2::default()
@@ -171,13 +178,9 @@ async fn logout_handler(_: jwt_auth::JwtMiddleware) -> Result<HttpResponse, Erro
 async fn user_handler(app: web::Data<AppState>,
                         user: jwt_auth::JwtMiddleware) -> Result<HttpResponse, Error> {
     info!("Fetching user with ID: {}", user.user_id);
-    let user = web::block(move || {
-        let mut conn = app.get_connection()?;
-        get_user(&mut conn, user.user_id)
-    })
-    .await?
-    .map_err(|err| ServiceError::BadRequest(err.to_string()))?;
-
+   let mut conn = app.get_connection().map_err(|err| ServiceError::InternalServerError(err.to_string()))?;
+    let user = get_user(&mut conn, user.user_id).map_err(|err| ServiceError::NotFound(err.to_string()))?;
+        
     // Ok(HttpResponse::Ok().json(UserProfileDto::from(user)))
     Ok(HttpResponse::Ok().json(user))
 }

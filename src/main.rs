@@ -4,6 +4,10 @@ mod schema;
 mod shared;
 mod swagger;
 pub mod files;
+pub mod folders;
+mod file_store;
+
+pub use auth::service::get_user;
 
 #[macro_use]
 extern crate diesel;
@@ -23,6 +27,11 @@ use utoipa_swagger_ui::SwaggerUi;
 
 use shared::common::{AppState, Config};
 
+use diesel_migrations::{embed_migrations, EmbeddedMigrations, MigrationHarness};
+
+use crate::file_store::FileStore;
+pub const MIGRATIONS: EmbeddedMigrations = embed_migrations!();
+
 #[get("/healthcheck")]
 async fn health_check(_name: web::Path<String>) -> impl Responder {
     format!("WebServer Status: {}\nDatabase Status {}\n", "Ok", "Ok")
@@ -31,6 +40,8 @@ async fn health_check(_name: web::Path<String>) -> impl Responder {
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     dotenv::dotenv().ok();
+    // let env = Env::new().filter("APP_LOG").write_style("APP_LOG_STYLE");
+    // env_logger::init_from_env(env);
     env_logger::init();
     
     let config = Config::init();
@@ -41,7 +52,13 @@ async fn main() -> std::io::Result<()> {
         .build(manager)
         .expect("Failed to create pool.");
 
-    let _ = pool.get().expect("Failed to get connection from pool");
+    let mut connection  = pool.get().expect("Failed to get connection from pool");
+
+    connection.run_pending_migrations(MIGRATIONS).expect("Failed to run migrations");
+
+    
+    //TODO: Support multiple Storage services
+    let storage = FileStore::new(std::env::var("FILE_STORE_BASE_PATH").expect("FILE_STORE_BASE_PATH must be set"));
     
     // let result: CountResult = sql_query("SELECT COUNT(*) AS count FROM information_schema.tables WHERE table_name = 'users'")
     //     .get_result::<CountResult>(&mut conn)
@@ -70,7 +87,9 @@ async fn main() -> std::io::Result<()> {
             .app_data(web::Data::new(AppState::new(
                 pool.clone(),
                 config.clone(),
-                true,                // is_db_ready,
+                // Box::new(storage.clone()),
+                storage.clone(),
+                std::env::var("PROD_MODE").unwrap_or("false".to_string()).parse::<bool>().unwrap_or(false)
             )))
             .wrap(cors)
             .wrap(Logger::default())
@@ -78,6 +97,7 @@ async fn main() -> std::io::Result<()> {
                 web::scope("/api")
                     .configure(auth::config)
                     .configure(files::config)
+                    .configure(folders::config)
                     // .configure(users::config)
                     // .configure(blocks::config)
                     // .configure(pages::config),

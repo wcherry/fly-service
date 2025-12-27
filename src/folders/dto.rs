@@ -1,22 +1,19 @@
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
-use crate::schema::files;
+use crate::schema::{file_folders};
 
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
 #[derive(Queryable, Selectable, Insertable, AsChangeset)]
-#[diesel(table_name = files)]
+#[diesel(table_name = file_folders)]
 #[serde(rename_all = "camelCase")]
-pub struct FileDto {
-    // The unique identifier for the File
+pub struct FolderDto {
+    // The unique identifier for the folder
     pub id: String,
-    // The ID of the user who owns the File
+    // The ID of the user who owns the folder
     pub owner_id: i32,
-    pub access_level: i32,
+    pub parent_folder_id: String,
     pub title: String,
-    pub folder_id: String,
-    pub media_type: Option<String>,
-    pub orginal_filename: Option<String>,
-    // Additional description of the file
+    // Additional description of the folder
     pub description: Option<String>,
     pub created_at: Option<chrono::NaiveDateTime>,
     pub updated_at: Option<chrono::NaiveDateTime>,
@@ -27,11 +24,9 @@ pub struct FileDto {
 
 #[derive(Debug, Clone, Deserialize, ToSchema)]
 #[serde(rename_all = "camelCase")]
-pub struct CreateFileDto {
-    pub access_level: i32,
+pub struct CreateFolderDto {
     pub title: String,
-    pub folder_id: String,
-    pub media_type: Option<String>,
+    pub parent_folder_id: String,
     pub description: Option<String>,
 }
 

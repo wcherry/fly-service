@@ -2,6 +2,7 @@ use utoipa::OpenApi;
 
 use crate::auth;
 use crate::files;
+use crate::folders;
 
 #[derive(OpenApi)]
 #[openapi(
@@ -10,9 +11,14 @@ use crate::files;
         auth::register_user_handler, 
         auth::login_user_handler,
         auth::logout_handler,
-    // Tasks
+    // Files
         files::get_file_handler,
         files::get_file_contents_handler,
+        files::create_file_handler,
+        files::upload_file_handler,
+        files::get_all_files_handler,
+    // Folders
+        folders::get_all_folders_handler,
     ),
     // components(
     //     schemas(
@@ -29,9 +35,9 @@ use crate::files;
         ("token_jwt" = [])
     ),
     tags(
-        (name = "task_now::api", description = "Task NOW API", external_docs(url = "http://more.about.our.apis", description = "More about our APIs")),
+        (name = "fly::api", description = "Fly API", external_docs(url = "http://more.about.our.apis", description = "More about our APIs")),
         (name = "Authentication", description = "Authentication related endpoints"),
-        (name = "Tasks", description = "Task management endpoints"),
+        (name = "Files", description = "File management endpoints"),
     ),
     external_docs(url = "http://more.about.our.apis", description = "More about our APIs")
 )]

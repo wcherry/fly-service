@@ -1,6 +1,6 @@
 // use std::{sync::{Arc, Mutex}};
 
-use std::sync::{Arc, Mutex};
+use std::{fs, io::Error};
 
 use actix_web::{HttpResponse, ResponseError};
 use derive_more::Display;
@@ -8,9 +8,15 @@ use diesel::{
     prelude::*, r2d2::{self, ConnectionManager, PooledConnection}
 };
 
+use async_trait::async_trait;
+
+use crate::file_store::FileStore;
+
 pub type DbError = Box<dyn std::error::Error + Send + Sync>;
 pub type DbPool = r2d2::Pool<ConnectionManager<SqliteConnection>>;
 pub type Connection = PooledConnection<ConnectionManager<SqliteConnection>>;
+
+const BASE_PATH : &str ="./target/files";
 
 // Format the response as JSON instead of the default text
 // actix_web::error::ErrorBadRequest(err)
@@ -32,8 +38,9 @@ pub enum ServiceError {
     #[display(r#"{{"error":"{}"}}"#, _0)]
     BadRequest(String),
 
-    // #[display(fmt = r#"{{"error":"Unauthorized"}}"#)]
-    // Unauthorized,
+    #[display(r#"{{"error":"Unauthorized"}}"#)]
+    Unauthorized,
+
     #[display(r#"{{"error":"Object '{}' not Found"}}"#, _0)]
     NotFound(String),
 }
@@ -47,9 +54,9 @@ impl ResponseError for ServiceError {
             ServiceError::BadRequest(ref _message) => HttpResponse::BadRequest()
                 .content_type("application/json")
                 .body(self.to_string()),
-            // ServiceError::Unauthorized => HttpResponse::Unauthorized()
-            //     .content_type("application/json")
-            //     .body(self.to_string()),
+            ServiceError::Unauthorized => HttpResponse::Unauthorized()
+                .content_type("application/json")
+                .body(self.to_string()),
             ServiceError::NotFound(ref _message) => HttpResponse::NotFound()
                 .content_type("application/json")
                 .body(self.to_string()),
@@ -89,15 +96,18 @@ impl Config {
 pub struct AppState {
     pool: DbPool,
     config: Config,
-    prod_mode: Arc<Mutex<bool>>,
+    // storage: Box<dyn StorageService>,
+    storage: FileStore,
+    prod_mode: bool,
 }
 
 impl AppState {
-    pub fn new(pool: DbPool, config: Config, prod_mode: bool) -> AppState {
+    pub fn new(pool: DbPool, config: Config, storage: FileStore, prod_mode: bool) -> AppState {
         AppState {
             pool,
             config,
-            prod_mode: Arc::new(Mutex::new(prod_mode)),
+            storage,
+            prod_mode,
         }
     }
     // pub fn set_init_completed(&self, completed: bool) {
@@ -123,7 +133,31 @@ impl AppState {
     }
 
     pub fn is_prod_mode(&self) -> bool {
-        *self.prod_mode.lock().unwrap()
+        self.prod_mode
+    }
+
+    pub fn get_storage_service(&self) -> &FileStore { //&Box<dyn StorageService> {
+        &self.storage
+    }    
+}
+
+pub fn build_full_path(user_folder: &str, file_folder: &str) -> String {
+    match user_folder == file_folder {
+        true => user_folder.to_string(),
+        false => format!("{}/{}", user_folder, file_folder),
     }
 }
 
+pub fn create_file_folder(full_path: String) -> Result<(), std::io::Error> {
+    fs::create_dir_all(format!("{}/{}",BASE_PATH, full_path))
+}
+
+#[allow(dead_code)]
+#[async_trait]
+pub trait StorageService {
+    async fn save_file(&mut self, path: String, name: String, input: &mut futures_util::stream::IntoStream<actix_multipart::Field>) -> Result<(), Error>;
+    fn retrieve_file(&self, path: String, name: String) -> Result<Vec<u8>, Error>;
+    fn create_folder(&self, path: String) -> Result<(), Error>;
+    fn list_file_names(&self, path: String) -> Result<Vec<String>, Error>;
+    fn list_folder_names(&self, path: String) -> Result<Vec<String>, Error>;
+}

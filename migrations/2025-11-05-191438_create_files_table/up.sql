@@ -5,7 +5,8 @@ CREATE TABLE files (
     access_level INTEGER NOT NULL DEFAULT 0, -- 0: private, 1: public, 2: shared
     title VARCHAR(256) NOT NULL,
     folder_id VARCHAR(36) NOT NULL, -- UUID
-    media_type VARCHAR(256) NOT NULL,
+    media_type VARCHAR(256),
+    orginal_filename TEXT,
     description TEXT,
     -- metadata
     created_at timestamp DEFAULT CURRENT_TIMESTAMP,
