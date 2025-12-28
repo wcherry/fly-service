@@ -59,6 +59,7 @@ pub async fn register_user_handler(
     let _created = web::block(move || {
         create_user(
             &mut conn,
+            app.get_storage_service(),
             NewUserDto{
                 username: body.username.to_owned(),
                 email_address: body.email.to_owned(),

@@ -2,7 +2,7 @@ use futures_util::TryStreamExt;
 
 // use crate::shared::common::StorageService;
 
-use std::{fs::File, io::Error, io::Write};
+use std::{fs::{self, File}, io::{Error, Write}};
 
 // use async_trait::async_trait;
 
@@ -35,12 +35,12 @@ impl FileStore {
         
         Ok(())
     }
-    fn retrieve_file(&self, _path: String, _name: String) -> Result<Vec<u8>, Error> {
+    pub fn retrieve_file(&self, _path: String, _name: String) -> Result<Vec<u8>, Error> {
         unimplemented!()
     }
 
-    fn create_folder(&self, _path: String) -> Result<(), Error> {
-        unimplemented!()
+    pub fn create_folder(&self, path: String) -> Result<(), Error> {
+        fs::create_dir_all(format!("{}/{}",self.base_path, path))
     }
 
     fn list_file_names(&self, _path: String) -> Result<Vec<String>, Error> {

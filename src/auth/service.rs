@@ -1,4 +1,5 @@
-use crate::shared::common::{DbError, create_file_folder};
+use crate::file_store::FileStore;
+use crate::shared::common::{DbError,};
 use crate::shared::dto::{NewUserDto, UserDto, CreateUser, User};
 use argon2::{PasswordHash, PasswordVerifier};
 use diesel::insert_into;
@@ -57,6 +58,7 @@ pub fn is_exists(conn: &mut Connection, username: String) -> Result<bool, DbErro
 
 pub fn create_user(
     conn: &mut Connection,
+    storage: &FileStore,
     new_user : NewUserDto,
 ) -> Result<bool, DbError> {
     let salt = SaltString::generate(&mut OsRng);
@@ -79,7 +81,7 @@ pub fn create_user(
     // Create user object
     let num_records = insert_into(users::dsl::users).values(user).execute(conn)?;
 
-    create_file_folder(uuid)?;
+    storage.create_folder(uuid)?;
 
     Ok(num_records == 1)
 }

@@ -1,6 +1,6 @@
 // use std::{sync::{Arc, Mutex}};
 
-use std::{fs, io::Error};
+use std::io::Error;
 
 use actix_web::{HttpResponse, ResponseError};
 use derive_more::Display;
@@ -15,8 +15,6 @@ use crate::file_store::FileStore;
 pub type DbError = Box<dyn std::error::Error + Send + Sync>;
 pub type DbPool = r2d2::Pool<ConnectionManager<SqliteConnection>>;
 pub type Connection = PooledConnection<ConnectionManager<SqliteConnection>>;
-
-const BASE_PATH : &str ="./target/files";
 
 // Format the response as JSON instead of the default text
 // actix_web::error::ErrorBadRequest(err)
@@ -146,10 +144,6 @@ pub fn build_full_path(user_folder: &str, file_folder: &str) -> String {
         true => user_folder.to_string(),
         false => format!("{}/{}", user_folder, file_folder),
     }
-}
-
-pub fn create_file_folder(full_path: String) -> Result<(), std::io::Error> {
-    fs::create_dir_all(format!("{}/{}",BASE_PATH, full_path))
 }
 
 #[allow(dead_code)]
